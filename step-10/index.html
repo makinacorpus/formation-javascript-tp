@@ -1,0 +1,136 @@
+<html>
+
+<head>
+  <title>
+    Nonogramme
+  </title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body>
+  <aside>
+    <div id="creation-container">
+      <h3>
+        Créer un nonogramme
+      </h3>
+
+      <label for="col_number">
+        Nombre de colonnes
+      </label>
+      <input id="col_number" type="number" />
+      <br />
+      <label for="line_number">
+        Nombre de lignes
+      </label>
+      <input id="line_number" type="number" />
+      <br />
+      <button onclick="onClickCreateTableButton()">
+        Créer le nonogramme
+      </button>
+
+      <label for="title">
+        Titre
+      </label>
+      <input id="title" type="text" />
+      <br />
+      <button onclick="onClickExportPicrossButton()">
+        Exporter le nonogramme
+      </button>
+
+      <pre style="border: 1px solid gray; height: 10rem; overflow: auto;" />
+
+      </div>
+      <div>
+        <h3>
+          Listing des nonogrammes
+        </h3>
+        <ul id="data-container" />
+      </div>
+    </aside>
+    
+    <main>
+      <h2>Nonogrammes</h2>
+      <div>
+        <div id="timer-container">
+        </div>
+        <div id="table-container">
+        </div>
+      </div>
+    </main>
+
+    <h1 id="victory-container" class="d-none">
+      Victoire !!!
+    </h1>
+
+    <script type="module">
+      import {
+        PicrossEditor,
+        PicrossGame
+      } from './Picross.js';
+      import { Timer } from './Timer.js'
+      const dataContainerId = 'data-container'
+      const tableContainerId = 'table-container'
+      const creationContainerId = 'creation-container'
+      const victoryContainerId = 'victory-container'
+      const timerContainer = document.getElementById('timer-container')
+
+      const timer = new Timer(timerContainer)
+
+      let picrossEditorInstance = null
+      let picrossGameInstance = null
+
+      function emptyNode (node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function onClickCreateTableButton () {
+        picrossEditorInstance = new PicrossEditor(
+          document.getElementById(tableContainerId)
+        )
+        const colNumber = parseInt(document.getElementById('col_number').value)
+        const lineNumber = parseInt(document.getElementById('line_number').value)
+        picrossEditorInstance.createTable(colNumber, lineNumber)
+      }
+
+      function onClickExportPicrossButton () {
+        const picross = {
+          title: document.getElementById('title').value,
+          ...picrossEditorInstance.computeDataTable()
+        }
+        const preNode = document.querySelector(`#${creationContainerId} pre`)
+        emptyNode(preNode)
+        preNode.innerHTML = JSON.stringify(picross)
+      }
+    
+      function loadDataPicross () {
+        const dataContainer = document.getElementById(dataContainerId)
+        emptyNode(dataContainer)
+        fetch('/data/picross.json')
+          .then(response => (response.json()))
+          .then(picrossArray => {
+            picrossArray.forEach(currentPicross => {
+              const liNode = document.createElement('li')
+              liNode.innerText = currentPicross.title
+              liNode.style = 'cursor: pointer;'
+              liNode.onclick = (e) => {
+                document.getElementById(victoryContainerId).className = 'd-none'
+                const container = document.getElementById(tableContainerId)
+                picrossGameInstance = new PicrossGame(container, currentPicross)
+                picrossGameInstance.createTable()
+                timer.startTimer()
+                picrossGameInstance.onFinished(() => {
+                  document.getElementById(victoryContainerId).className = ''
+                  timer.stopTimer()
+                })
+              }
+              dataContainer.appendChild(liNode)
+            })
+          })
+      }
+
+      loadDataPicross()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,447 @@
+<html>
+
+<head>
+  <title>
+    Nonogramme
+  </title>
+  <style>
+    html,
+    body {
+      font-family: monospace;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    table {
+      border: 1px solid gray;
+      border-collapse: collapse;
+      text-align: right;
+    }
+
+    tr:nth-child(1) td {
+      word-wrap: anywhere;
+      white-space: pre-wrap;
+      text-align: left;
+      vertical-align: bottom;
+    }
+
+    tr,
+    td {
+      height: 20px;
+    }
+
+    td {
+      width: 20px;
+      border: 1px solid gray;
+    }
+
+    td:hover {
+      background-color: red;
+    }
+
+    td:nth-child(5n + 1) {
+      border-right: 2px solid black;
+    }
+
+    tr:nth-child(5n + 1) {
+      border-bottom: 2px solid black;
+    }
+
+    .selected {
+      background-color: blue;
+    }
+
+    .d-none {
+      display: none;
+    }
+
+    label {
+      display: block;
+      margin: .5rem 0;
+    }
+
+    body {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    main {
+      flex-grow: 1;
+      flex-direction: column;
+      display: flex;
+      text-align: center;
+    }
+
+    main h2 {
+      text-align: right;
+      margin: 1rem;
+    }
+
+    main>div {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #timer-container {
+      margin: 1rem;
+    }
+
+    h1 {
+      position: absolute;
+      width: 40rem;
+      font-size: 5rem;
+      top: 10rem;
+      padding: 2rem;
+      left: calc(50% - 21rem);
+      background-color: whitesmoke;
+      text-align: center;
+    }
+
+    aside {
+      width: 20rem;
+      height: 100%;
+      padding: 0 1rem;
+      border-right: 1px solid gray;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid gray;
+      border-radius: unset;
+      padding: .25rem;
+      margin-bottom: 1rem;
+    }
+
+    button {
+      margin: 0.5rem auto;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <aside>
+    <div id="creation-container">
+      <h3>
+        Créer un nonogramme
+      </h3>
+
+      <label for="col_number">
+        Nombre de colonnes
+      </label>
+      <input id="col_number" type="number" />
+      <br />
+      <label for="line_number">
+        Nombre de lignes
+      </label>
+      <input id="line_number" type="number" />
+      <br />
+      <button onclick="onClickCreateTableButton()">
+        Créer le nonogramme
+      </button>
+
+      <label for="title">
+        Titre
+      </label>
+      <input id="title" type="text" />
+      <br />
+      <button onclick="onClickExportPicrossButton()">
+        Exporter le nonogramme
+      </button>
+
+      <pre style="border: 1px solid gray; height: 10rem; overflow: auto;" />
+
+      </div>
+      <div>
+        <h3>
+          Listing des nonogrammes
+        </h3>
+        <ul id="data-container" />
+      </div>
+    </aside>
+    
+    <main>
+      <h2>Nonogrammes</h2>
+      <div>
+        <div id="timer-container">
+        </div>
+        <div id="table-container">
+        </div>
+      </div>
+    </main>
+
+    <h1 id="victory-container" class="d-none">
+      Victoire !!!
+    </h1>
+
+    <script>
+      class Timer {
+        constructor(container) {
+          this._intervalId = null
+          this._currentTime = null
+          this._container = container
+        }
+        _resetTime () {
+          this._currentTime = 0
+          this._updateDisplay()
+        }
+        _updateDisplay () {
+          this._container.innerHTML = this._currentTime + ' s'
+        }
+        startTimer () {
+          this._resetTime()
+          this._intervalId = setInterval(() => {
+            this._currentTime++
+            this._updateDisplay()
+          }, 1000)
+        }
+        stopTimer () {
+          if (this._intervalId) clearInterval(this._intervalId)
+        }
+      }
+
+      function emptyNode (node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      class PicrossEditor {
+        constructor (container) {
+          this._container = container
+        }
+
+        _emptyNode = emptyNode
+
+        createTable = function createTable (colNumber, lineNumber) {
+          this._emptyNode(this._container)
+          const table = document.createElement('table')
+          for (let i = 0; i < lineNumber + 1; i++) {
+            const currentRow = document.createElement('tr')
+            for (let j = 0; j < colNumber + 1; j++) {
+              const currentCell = document.createElement('td')
+              if (i > 0 && j > 0) {
+                currentCell.onclick = this._toggleCellState
+              }
+              currentRow.appendChild(currentCell)
+            }
+            table.appendChild(currentRow)
+          }
+          this._container.appendChild(table)
+        }
+
+        _isCellEnabled = function _isCellEnabled (node) {
+          return node.className === 'selected'
+        }
+
+        _toggleCellState = function _toggleCellState (e) {
+          if (e.target.className === 'selected') {
+            e.target.className = ''
+          } else {
+            e.target.className ='selected'
+          }
+        }
+
+        computeDataTable = function computeDataTable () {
+          // parcours du tableau
+          // création d'un objet mémoire recensant les cellules activées
+          // on stocke à la fois par colonnes et par lignes
+          const [,...rows] = this._container.querySelectorAll(`table tr`)
+          const rowsData = []
+          const columnsCellsData = []
+          /**
+          * Première étape,
+          * on recense chaque cellule 
+          * dans deux tableaux distincts,
+          * * l'un pour les lignes,
+          * * l'autre pour les colonnes
+          */
+          rows.forEach((currentRow, indexTableRow) => {
+            const rowData = []
+            const [,...cells] = currentRow.querySelectorAll('td')
+            let previousNumberCellsEnabled = 0
+            cells.forEach((currentCell, indexTableColumn) => {
+              const isCurrentCellEnabled = this._isCellEnabled(currentCell)
+              if (isCurrentCellEnabled) {
+                previousNumberCellsEnabled++
+              } else if (previousNumberCellsEnabled > 0) {
+                rowData.push(previousNumberCellsEnabled)
+                previousNumberCellsEnabled = 0
+              }
+              if (columnsCellsData.length === indexTableColumn) {
+                columnsCellsData.push([])
+              }
+              columnsCellsData[indexTableColumn].push(isCurrentCellEnabled)
+            })
+            if (previousNumberCellsEnabled > 0) {
+              rowData.push(previousNumberCellsEnabled)
+            }
+            rowsData.push(rowData)
+          })
+
+          /**
+          * Deuxième étape,
+          * on calcule les enchaînements des colonnes
+          */
+          const columnsData = columnsCellsData.map(currentColumnCellData => {
+            const columnData = []
+            let previousNumberCellsEnabled = 0
+            currentColumnCellData.forEach(currentCell => {
+              if (currentCell) {
+                previousNumberCellsEnabled++
+              } else if (previousNumberCellsEnabled > 0) {
+                columnData.push(previousNumberCellsEnabled)
+                previousNumberCellsEnabled = 0
+              }
+            })
+            if (previousNumberCellsEnabled > 0) {
+              columnData.push(previousNumberCellsEnabled)
+            }
+            return columnData
+          })
+
+          return {
+            data: {
+              rows: rowsData,
+              columns: columnsData
+            },
+            size: {
+              rows: rowsData.length,
+              columns: columnsData.length
+            }
+          }
+        }
+      }
+
+      class PicrossGame extends PicrossEditor {
+        constructor (container, picrossData) {
+          super(container)
+          this._picrossData = picrossData
+        }
+        
+        createTable = function () {
+          this._emptyNode(this._container)
+          const table = document.createElement('table')
+          for (let i = 0; i < this._picrossData.size.rows + 1; i++) {
+            const currentRow = document.createElement('tr')
+            for (let j = 0; j < this._picrossData.size.columns + 1; j++) {
+              const currentCell = document.createElement('td')
+              // si on est sur la première ligne
+              if (i === 0) {
+                // et pas sur la première colonne
+                if (j > 0) {
+                  currentCell.innerHTML = this._picrossData.data.columns[j - 1].join(' ')
+                }
+              } else
+              // sinon, si on est sur la première colonne (et donc sur les lignes suivantes)
+              if (j === 0) {
+                currentCell.innerHTML = this._picrossData.data.rows[i - 1].join('&nbsp;')
+              }
+              currentCell.onclick = this._toggleCellState.bind(this)
+              currentRow.appendChild(currentCell)
+            }
+            table.appendChild(currentRow)
+          }
+          this._container.appendChild(table)
+        }
+        
+        _toggleCellState = function (e) {
+          if (e.target.className === 'selected') {
+            e.target.className = ''
+          } else {
+            e.target.className ='selected'
+          }
+          this.isPicrossIsFinished() && this._onFinishedHandler()
+        }
+        
+        isPicrossIsFinished = function () {
+          const { 
+            data: { 
+              rows: currentRows, 
+              columns: currentColumns
+            }
+          } = this.computeDataTable()
+
+          const { 
+            data: { 
+              rows: picrossRows, 
+              columns: picrossColumns
+            }
+          } = this._picrossData
+
+          const currentRowsJoined = currentRows.map(cr => cr.join('-')).join('|')
+          const currentColumnsJoined = currentColumns.map(cr => cr.join('-')).join('|')
+          const picrossRowsJoined = picrossRows.map(cr => cr.join('-')).join('|')
+          const picrossColumnsJoined = picrossColumns.map(cr => cr.join('-')).join('|')
+          return currentRowsJoined === picrossRowsJoined && currentColumnsJoined === picrossColumnsJoined
+        }
+
+        onFinished = function (onFinishedHandler) {
+          this._onFinishedHandler = onFinishedHandler
+        }
+      }
+
+      const dataContainerId = 'data-container'
+      const tableContainerId = 'table-container'
+      const creationContainerId = 'creation-container'
+      const victoryContainerId = 'victory-container'
+      const timerContainer = document.getElementById('timer-container')
+
+      const timer = new Timer(timerContainer)
+
+      let picrossEditorInstance = null
+      let picrossGameInstance = null
+
+      function onClickCreateTableButton () {
+        picrossEditorInstance = new PicrossEditor(
+          document.getElementById(tableContainerId)
+        )
+        const colNumber = parseInt(document.getElementById('col_number').value)
+        const lineNumber = parseInt(document.getElementById('line_number').value)
+        picrossEditorInstance.createTable(colNumber, lineNumber)
+      }
+
+      function onClickExportPicrossButton () {
+        const picross = {
+          title: document.getElementById('title').value,
+          ...picrossEditorInstance.computeDataTable()
+        }
+        const preNode = document.querySelector(`#${creationContainerId} pre`)
+        emptyNode(preNode)
+        preNode.innerHTML = JSON.stringify(picross)
+      }
+    
+      function loadDataPicross () {
+        const dataContainer = document.getElementById(dataContainerId)
+        emptyNode(dataContainer)
+        fetch('/data/picross.json')
+          .then(response => (response.json()))
+          .then(picrossArray => {
+            picrossArray.forEach(currentPicross => {
+              const liNode = document.createElement('li')
+              liNode.innerText = currentPicross.title
+              liNode.style = 'cursor: pointer;'
+              liNode.onclick = (e) => {
+                document.getElementById(victoryContainerId).className = 'd-none'
+                const container = document.getElementById(tableContainerId)
+                picrossGameInstance = new PicrossGame(container, currentPicross)
+                picrossGameInstance.createTable()
+                timer.startTimer()
+                picrossGameInstance.onFinished(() => {
+                  document.getElementById(victoryContainerId).className = ''
+                  timer.stopTimer()
+                })
+              }
+              dataContainer.appendChild(liNode)
+            })
+          })
+      }
+
+      loadDataPicross()
+    </script>
+  </body>
+</html>

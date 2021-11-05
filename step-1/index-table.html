@@ -1,0 +1,86 @@
+<html>
+  <head>
+    <title>
+      Nonogramme
+    </title>
+    <style>
+      table {
+        border: 1px solid gray;
+        border-collapse: collapse;
+      }
+      tr, td {
+        height: 20px;
+      }
+      td {
+        width: 20px;
+        border: 1px solid gray;
+      }
+      td:hover {
+        background-color: red;
+      }
+      .selected {
+        background-color: blue;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </table>
+
+    <script>
+      document.querySelector('table').addEventListener('click', e => {
+        if (e.target.nodeName === 'TD') {
+          e.target.classList.toggle('selected')
+        }
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <title>
+      Nonogramme
+    </title>
+    <style>
+      table {
+        border: 1px solid gray;
+        border-collapse: collapse;
+      }
+      tr, td {
+        height: 20px;
+      }
+      td {
+        width: 20px;
+        border: 1px solid gray;
+      }
+      td:hover {
+        background-color: red;
+      }
+      .selected {
+        background-color: blue;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      Créer un tableau <br/>
+
+      <label
+        for="col_number"
+      >
+        Nombre de colonnes
+      </label>
+      <input
+        id="col_number"
+        type="number"
+      />
+      <br/>
+      <label
+        for="line_number"
+      >
+        Nombre de lignes
+      </label>
+      <input
+        id="line_number"
+        type="number"
+      />
+      <br/>
+      <button
+        onclick="onClickCreateTableButton()"
+      >
+        Créer le tableau
+      </button>
+    </div>
+    
+    <div
+      id="container"
+    >
+    </div>
+
+
+    <div>
+      <label
+        for="title"
+      >
+        Titre
+      </label>
+      <input
+        id="title"
+        type="text"
+      />
+      <br/>
+      <button
+        onclick="onClickExportPicrossButton()"
+      >
+        Exporter le nonogramme
+      </button>
+    </div>
+
+    <script>
+      function onClickCreateTableButton () {
+        const colNumber = document.getElementById('col_number').value
+        const lineNumber = document.getElementById('line_number').value
+        const tableToInject = createTable(colNumber, lineNumber)
+        const container = document.getElementById('container')
+        emptyNode(container)
+        container.appendChild(tableToInject)
+      }
+
+      function onClickExportPicrossButton () {
+        const picross = {
+          title: document.getElementById('title').value,
+          data: computeDataTable()
+        }
+        console.log(picross)
+      }
+      function computeDataTable () {
+        const dataTable = []
+        // parcours du tableau
+        // création d'un objet mémoire recensant les cellules activées
+        const rows = document.querySelectorAll('#container table tr')
+        rows.forEach(currentRow => {
+          const rowData = []
+          const cells = currentRow.querySelectorAll('td')
+          cells.forEach(currentCell => rowData.push(currentCell.className === 'selected'))
+          dataTable.push(rowData)
+        })
+        return dataTable
+      }
+
+      function createTable (colNumber, lineNumber) {
+        const table = document.createElement('table')
+        for (let i = 0; i < lineNumber; i++) {
+          const currentRow = document.createElement('tr')
+          for (let j = 0; j < colNumber; j++) {
+            const currentCell = document.createElement('td')
+            currentCell.onclick = toggleCellState
+            currentRow.appendChild(currentCell)
+          }
+          table.appendChild(currentRow)
+        }
+        return table
+      }
+
+      function emptyNode (node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function toggleCellState (e) {
+        if (e.target.className === 'selected') {
+          e.target.className = ''
+        } else {
+          e.target.className ='selected'
+        }
+      }
+    </script>
+  </body>
+</html>

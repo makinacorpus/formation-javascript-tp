@@ -1,0 +1,199 @@
+<html>
+
+<head>
+  <title>
+    Nonogramme
+  </title>
+  <style>
+    table {
+      border: 1px solid gray;
+      border-collapse: collapse;
+    }
+
+    tr,
+    td {
+      height: 20px;
+    }
+
+    td {
+      width: 20px;
+      border: 1px solid gray;
+    }
+
+    td:hover {
+      background-color: red;
+    }
+
+    .selected {
+      background-color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="creation-container">
+    Créer un tableau <br />
+
+    <label for="col_number">
+      Nombre de colonnes
+    </label>
+    <input id="col_number" type="number" />
+    <br />
+    <label for="line_number">
+      Nombre de lignes
+    </label>
+    <input id="line_number" type="number" />
+    <br />
+    <button onclick="onClickCreateTableButton()">
+      Créer le tableau
+    </button>
+  </div>
+
+  <div id="table-container">
+  </div>
+
+
+  <div id="export-container">
+    <label for="title">
+      Titre
+    </label>
+    <input id="title" type="text" />
+    <br />
+    <button onclick="onClickExportPicrossButton()">
+      Exporter le nonogramme
+    </button>
+
+
+    <pre style="border: 1px solid gray; height: 10rem;" />
+    </div>
+
+    <script>
+      const tableContainerId = 'table-container'
+      const exportContainerId = 'export-container'
+      const creationContainerId = 'creation-container'
+      function onClickCreateTableButton () {
+        const colNumber = document.getElementById('col_number').value
+        const lineNumber = document.getElementById('line_number').value
+        const tableToInject = createTable(colNumber, lineNumber)
+        const container = document.getElementById(tableContainerId)
+        emptyNode(container)
+        container.appendChild(tableToInject)
+      }
+
+      function onClickExportPicrossButton () {
+        const picrossData = computeDataTable()
+        const picross = {
+          title: document.getElementById('title').value,
+          data: picrossData.data,
+          size: picrossData.size
+        }
+        const preNode = document.querySelector(`#${exportContainerId} pre`)
+        emptyNode(preNode)
+        preNode.innerHTML = JSON.stringify(picross)
+      }
+
+      function computeDataTable () {
+        // parcours du tableau
+        // création d'un objet mémoire recensant les cellules activées
+        // on stocke à la fois par colonnes et par lignes
+        const rows = document.querySelectorAll(`#${tableContainerId} table tr`)
+        const rowsData = []
+        const columnsCellsData = []
+        /**
+         * Première étape,
+         * on recense chaque cellule 
+         * dans deux tableaux distincts,
+         * * l'un pour les lignes,
+         * * l'autre pour les colonnes
+         */
+        rows.forEach(currentRow => {
+          const rowData = []
+          const cells = currentRow.querySelectorAll('td')
+          let previousNumberCellsEnabled = 0
+          cells.forEach((currentCell, indexTableColumn) => {
+            const isCurrentCellEnabled = isCellEnabled(currentCell)
+            if (isCurrentCellEnabled) {
+              previousNumberCellsEnabled++
+            } else if (previousNumberCellsEnabled > 0) {
+              rowData.push(previousNumberCellsEnabled)
+              previousNumberCellsEnabled = 0
+            }
+            if (columnsCellsData.length === indexTableColumn) {
+              columnsCellsData.push([])
+            }
+            columnsCellsData[indexTableColumn].push(isCurrentCellEnabled)
+          })
+          if (previousNumberCellsEnabled > 0) {
+            rowData.push(previousNumberCellsEnabled)
+          }
+          rowsData.push(rowData)
+        })
+
+        console.log('columnsCellsData', columnsCellsData)
+        /**
+         * Deuxième étape,
+         * on calcule les enchaînements des colonnes
+         */
+        const columnsData = columnsCellsData.map(currentColumnCellData => {
+          const columnData = []
+          let previousNumberCellsEnabled = 0
+          currentColumnCellData.forEach(currentCell => {
+            if (currentCell) {
+              previousNumberCellsEnabled++
+            } else if (previousNumberCellsEnabled > 0) {
+              columnData.push(previousNumberCellsEnabled)
+              previousNumberCellsEnabled = 0
+            }
+          })
+          if (previousNumberCellsEnabled > 0) {
+            columnData.push(previousNumberCellsEnabled)
+          }
+          return columnData
+        })
+
+        return {
+          data: {
+            rows: rowsData,
+            columns: columnsData
+          },
+          size: {
+            rows: rowsData.length,
+            columns: columnsData.length
+          }
+        }
+      }
+
+      function createTable (colNumber, lineNumber) {
+        const table = document.createElement('table')
+        for (let i = 0; i < lineNumber; i++) {
+          const currentRow = document.createElement('tr')
+          for (let j = 0; j < colNumber; j++) {
+            const currentCell = document.createElement('td')
+            currentCell.onclick = toggleCellState
+            currentRow.appendChild(currentCell)
+          }
+          table.appendChild(currentRow)
+        }
+        return table
+      }
+
+      function emptyNode (node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function isCellEnabled (node) {
+        return node.className === 'selected'
+      }
+
+      function toggleCellState (e) {
+        if (e.target.className === 'selected') {
+          e.target.className = ''
+        } else {
+          e.target.className ='selected'
+        }
+      }
+    </script>
+  </body>
+</html>

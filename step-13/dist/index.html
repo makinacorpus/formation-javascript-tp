@@ -1,0 +1,66 @@
+<html>
+
+<head>
+  <title>
+    Nonogramme
+  </title>
+</head>
+
+<body>
+  <aside>
+    <div id="creation-container">
+      <h3>
+        Créer un nonogramme
+      </h3>
+
+      <label for="col_number">
+        Nombre de colonnes
+      </label>
+      <input id="col_number" type="number" />
+      <br />
+      <label for="line_number">
+        Nombre de lignes
+      </label>
+      <input id="line_number" type="number" />
+      <br />
+      <button onclick="onClickCreateTableButton()">
+        Créer le nonogramme
+      </button>
+
+      <label for="title">
+        Titre
+      </label>
+      <input id="title" type="text" />
+      <br />
+      <button onclick="onClickExportPicrossButton()">
+        Exporter le nonogramme
+      </button>
+
+      <pre style="border: 1px solid gray; height: 10rem; overflow: auto;" />
+
+      </div>
+      <div>
+        <h3>
+          Listing des nonogrammes
+        </h3>
+        <ul id="data-container" />
+      </div>
+    </aside>
+    
+    <main>
+      <h2>Nonogrammes</h2>
+      <div>
+        <div id="timer-container">
+        </div>
+        <div id="table-container">
+        </div>
+      </div>
+    </main>
+
+    <h1 id="victory-container" class="d-none">
+      Victoire !!!
+    </h1>
+
+    <script src="main.js"></script>
+  </body>
+</html>

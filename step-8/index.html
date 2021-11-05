@@ -1,0 +1,356 @@
+<html>
+  <head>
+    <title>
+      Nonogramme
+    </title>
+    <style>
+      table {
+        border: 1px solid gray;
+        border-collapse: collapse;
+        font-family: monospace;
+        text-align: right;
+      }
+      tr:nth-child(1) td {
+        word-wrap: anywhere;
+        white-space: pre-wrap;
+        text-align: left;
+        vertical-align: bottom;
+      }
+      tr, td {
+        height: 20px;
+      }
+      td {
+        width: 20px;
+        border: 1px solid gray;
+      }
+      td:hover {
+        background-color: red;
+      }
+      td:nth-child(5n + 1) {
+        border-right: 2px solid black;
+      }
+      tr:nth-child(5n + 1) {
+        border-bottom: 2px solid black;
+      }
+      .selected {
+        background-color: blue;
+      }
+      .d-none {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="creation-container"
+    >
+      Créer un tableau <br/>
+
+      <label
+        for="col_number"
+      >
+        Nombre de colonnes
+      </label>
+      <input
+        id="col_number"
+        type="number"
+      />
+      <br/>
+      <label
+        for="line_number"
+      >
+        Nombre de lignes
+      </label>
+      <input
+        id="line_number"
+        type="number"
+      />
+      <br/>
+      <button
+        onclick="onClickCreateTableButton()"
+      >
+        Créer le tableau
+      </button>
+    </div>
+
+    <div>
+      Listing des picross
+      <ul id="data-container" />
+    </div>
+    
+    <div
+      id="table-container"
+    >
+    </div>
+
+    <h1
+      id="victory-container"
+      class="d-none"
+    >
+      Victoire !!!
+    </h1>
+
+    <div id='timer'></div>
+
+    <div
+      id="export-container"
+    >
+      <label
+        for="title"
+      >
+        Titre
+      </label>
+      <input
+        id="title"
+        type="text"
+      />
+      <br/>
+      <button
+        onclick="onClickExportPicrossButton()"
+      >
+        Exporter le nonogramme
+      </button>
+
+      <pre
+        style="border: 1px solid gray; height: 10rem; overflow: auto;"
+      />
+    </div>
+
+    <script>
+      const dataContainerId = 'data-container'
+      const tableContainerId = 'table-container'
+      const exportContainerId = 'export-container'
+      const creationContainerId = 'creation-container'
+      const victoryContainerId = 'victory-container'
+
+      let actualMode = 'creation' // creation | play
+      let currentMatrix = []
+      let currentPlayedPicross = null
+
+      function onClickCreateTableButton () {
+        actualMode = 'creation'
+        const colNumber = document.getElementById('col_number').value
+        const lineNumber = document.getElementById('line_number').value
+        const tableToInject = createTable(colNumber, lineNumber)
+        const container = document.getElementById(tableContainerId)
+        emptyNode(container)
+        container.appendChild(tableToInject)
+      }
+
+      function onClickExportPicrossButton () {
+        const picross = {
+          title: document.getElementById('title').value,
+          ...computeDataTable()
+        }
+        const preNode = document.querySelector(`#${exportContainerId} pre`)
+        emptyNode(preNode)
+        preNode.innerHTML = JSON.stringify(picross)
+      }
+
+      function computeDataTable () {
+        // parcours du tableau
+        // création d'un objet mémoire recensant les cellules activées
+        // on stocke à la fois par colonnes et par lignes
+        const [,...rows] = document.querySelectorAll(`#${tableContainerId} table tr`)
+        const rowsData = []
+        const columnsCellsData = []
+        /**
+         * Première étape,
+         * on recense chaque cellule 
+         * dans deux tableaux distincts,
+         * * l'un pour les lignes,
+         * * l'autre pour les colonnes
+         */
+        rows.forEach((currentRow, indexTableRow) => {
+          const rowData = []
+          const [,...cells] = currentRow.querySelectorAll('td')
+          let previousNumberCellsEnabled = 0
+          cells.forEach((currentCell, indexTableColumn) => {
+            const isCurrentCellEnabled = isCellEnabled(currentCell)
+            if (isCurrentCellEnabled) {
+              previousNumberCellsEnabled++
+            } else if (previousNumberCellsEnabled > 0) {
+              rowData.push(previousNumberCellsEnabled)
+              previousNumberCellsEnabled = 0
+            }
+            if (columnsCellsData.length === indexTableColumn) {
+              columnsCellsData.push([])
+            }
+            columnsCellsData[indexTableColumn].push(isCurrentCellEnabled)
+          })
+          if (previousNumberCellsEnabled > 0) {
+            rowData.push(previousNumberCellsEnabled)
+          }
+          rowsData.push(rowData)
+        })
+
+        /**
+         * Deuxième étape,
+         * on calcule les enchaînements des colonnes
+         */
+        const columnsData = columnsCellsData.map(currentColumnCellData => {
+          const columnData = []
+          let previousNumberCellsEnabled = 0
+          currentColumnCellData.forEach(currentCell => {
+            if (currentCell) {
+              previousNumberCellsEnabled++
+            } else if (previousNumberCellsEnabled > 0) {
+              columnData.push(previousNumberCellsEnabled)
+              previousNumberCellsEnabled = 0
+            }
+          })
+          if (previousNumberCellsEnabled > 0) {
+            columnData.push(previousNumberCellsEnabled)
+          }
+          return columnData
+        })
+
+        return {
+          data: {
+            rows: rowsData,
+            columns: columnsData
+          },
+          size: {
+            rows: rowsData.length,
+            columns: columnsData.length
+          }
+        }
+      }
+
+      function createTable (colNumber, lineNumber) {
+        const table = document.createElement('table')
+        for (let i = 0; i < lineNumber; i++) {
+          const currentRow = document.createElement('tr')
+          for (let j = 0; j < colNumber; j++) {
+            const currentCell = document.createElement('td')
+            currentCell.onclick = toggleCellState
+            currentRow.appendChild(currentCell)
+          }
+          table.appendChild(currentRow)
+        }
+        return table
+      }
+
+      function createTableFromPicross (picrossData) {
+        actualMode = 'play'
+        const table = document.createElement('table')
+        for (let i = 0; i < picrossData.size.rows + 1; i++) {
+          const currentRow = document.createElement('tr')
+          for (let j = 0; j < picrossData.size.columns + 1; j++) {
+            const currentCell = document.createElement('td')
+            // si on est sur la première ligne
+            if (i === 0) {
+              // et pas sur la première colonne
+              if (j > 0) {
+                currentCell.innerHTML = picrossData.data.columns[j - 1].join(' ')
+              }
+            } else
+            // sinon, si on est sur la première colonne (et donc sur les lignes suivantes)
+            if (j === 0) {
+              currentCell.innerHTML = picrossData.data.rows[i - 1].join('&nbsp;')
+            }
+            currentCell.onclick = toggleCellState
+            currentRow.appendChild(currentCell)
+          }
+          table.appendChild(currentRow)
+        }
+        return table
+      }
+
+      function emptyNode (node) {
+        while (node.firstChild) {
+          node.removeChild(node.firstChild);
+        }
+      }
+
+      function isCellEnabled (node) {
+        return node.className === 'selected'
+      }
+
+      function toggleCellState (e) {
+        if (e.target.className === 'selected') {
+          e.target.className = ''
+        } else {
+          e.target.className ='selected'
+        }
+        actualMode === 'play' && 
+        isPicrossIsFinished() && 
+        displayVictory()
+      }
+
+      function isPicrossIsFinished () {
+        const { 
+          data: { 
+            rows: currentRows, 
+            columns: currentColumns
+          }
+        } = computeDataTable()
+
+        const { 
+          data: { 
+            rows: picrossRows, 
+            columns: picrossColumns
+          }
+        } = currentPlayedPicross
+
+        const currentRowsJoined = currentRows.map(cr => cr.join('-')).join('|')
+        const currentColumnsJoined = currentColumns.map(cr => cr.join('-')).join('|')
+        const picrossRowsJoined = picrossRows.map(cr => cr.join('-')).join('|')
+        const picrossColumnsJoined = picrossColumns.map(cr => cr.join('-')).join('|')
+        return currentRowsJoined === picrossRowsJoined && currentColumnsJoined === picrossColumnsJoined
+      }
+
+      function displayVictory () {
+        stopTimer()
+        document.getElementById(victoryContainerId).className = ''
+      }
+
+      let intervalId
+      let currentTime
+      function resetTime () {
+        currentTime = 0
+        updateDisplay()
+      }
+      function updateDisplay () {
+        document.getElementById('timer').innerHTML = currentTime + ' s'
+      }
+      function startTimer () {
+        resetTime()
+        intervalId = setInterval(() => {
+          currentTime++
+          updateDisplay()
+        }, 1000)
+      }
+      function stopTimer () {
+        if (intervalId) clearInterval(intervalId)
+      }
+    
+      function loadDataPicross () {
+        const dataContainer = document.getElementById(dataContainerId)
+        emptyNode(dataContainer)
+        fetch('/data/picross.json')
+          .then(response => (response.json()))
+          .then(picrossArray => {
+            picrossArray.forEach(currentPicross => {
+              const liNode = document.createElement('li')
+              liNode.innerText = currentPicross.title
+              liNode.style = 'cursor: pointer;'
+              liNode.onclick = (e) => {
+                stopTimer()
+                currentPlayedPicross = currentPicross
+                document.getElementById(victoryContainerId).className = 'd-none'
+                const tableToInject = createTableFromPicross(currentPicross)
+                const container = document.getElementById(tableContainerId)
+                emptyNode(container)
+                container.appendChild(tableToInject)
+                startTimer()
+              }
+              dataContainer.appendChild(liNode)
+            })
+          })
+      }
+
+      loadDataPicross()
+    </script>
+  </body>
+</html>

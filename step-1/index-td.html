@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <title>
+      Nonogramme
+    </title>
+    <style>
+      table {
+        border: 1px solid gray;
+        border-collapse: collapse;
+      }
+      tr, td {
+        height: 20px;
+      }
+      td {
+        width: 20px;
+        border: 1px solid gray;
+      }
+      td:hover {
+        background-color: red;
+      }
+      .selected {
+        background-color: blue;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+      <tr>
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+        <td />
+      </tr>
+    </table>
+
+    <script>
+      function toggleClassName(e) {
+        if (e.target.className === 'selected') {
+          e.target.className = ''
+        } else {
+          e.target.className ='selected'
+        }
+      }
+      document.querySelectorAll('td').forEach(td => td.onclick = toggleClassName)
+    </script>
+  </body>
+</html>
