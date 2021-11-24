@@ -1,0 +1,22 @@
+{
+  "name": "tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^27.0.3",
+    "jest": "^27.3.1"
+  },
+  "dependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "axios": "^0.24.0",
+    "babel-jest": "^27.3.1"
+  }
+}
