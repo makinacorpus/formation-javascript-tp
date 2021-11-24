@@ -1,14 +1,16 @@
+import Users from './users'
 import axios from 'axios'
-import users from './users'
 
 jest.mock('axios')
 
 describe('users', () => {
-  beforeEach(() => {
-    axios.mockClear()
-  })
   it('sould return the user name', async () => {
-    axios.get.mockResolvedValue({ data: [{ name: 'John Doe'}] })
-    expect(await users.getLastUserName()).toBe('John Doe')
+    axios.get.mockResolvedValue({ data: [{ name: 'John Doe'}] });
+    expect(await Users.getLastUserName()).toBe('John Doe')
+  })
+
+  it('sould return the user name', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ data: [{ name: 'John Doe'}] })
+    expect(await Users.getLastUserNameFetch()).toBe('John Doe')
   })
 })
